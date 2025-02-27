@@ -4,6 +4,29 @@ import numpy as np
 import gdown
 import io
 
+
+import subprocess
+import sys
+
+# Function to install packages
+def install(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+# List of required packages
+required_packages = ["onnxruntime", "gdown", "numpy", "streamlit"]
+
+# Install each package if not already installed
+for package in required_packages:
+    try:
+        __import__(package)
+    except ImportError:
+        install(package)
+
+import streamlit as st
+import onnxruntime as rt
+import gdown
+import numpy as np
+
 # ==============================
 # CREATED BY ABHINAV NAUTIYAL 🚀
 # ==============================
