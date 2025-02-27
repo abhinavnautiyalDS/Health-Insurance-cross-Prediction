@@ -20,12 +20,8 @@ def load_model():
     st.write("Loading ONNX model from Google Drive into memory...")
     
     response = requests.get(DIRECT_URL, stream=True)
-    if response.status_code == 200:
-        model_bytes = io.BytesIO(response.content)  # Convert response to file-like object
-        return rt.InferenceSession(model_bytes.getvalue())  # Load ONNX model
-    else:
-        st.error(f"❌ Failed to fetch ONNX model. HTTP Status Code: {response.status_code}")
-        return None
+    return response.content if response.status_code == 200 else None
+   
 
 # Load the model
 session = load_model()
