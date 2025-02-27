@@ -1,9 +1,27 @@
 import streamlit as st
 import onnxruntime as rt
 import numpy as np
+import gdown
+import io
 
-# Load the ONNX model
-session = rt.InferenceSession("/content/RandomForestModel.onnx")
+# ==============================
+# CREATED BY ABHINAV NAUTIYAL 🚀
+# ==============================
+
+# Google Drive File ID of the ONNX Model
+
+
+
+url = f"https://drive.google.com/file/d/1p0SVNYD2NlT2J_hIPN3o7azBkEzxjqzF/view?usp=sharing"
+
+st.write("Loading ONNX model from Google Drive...")
+
+# Download the model file into a BytesIO object
+response = gdown.download(url, quiet=False)
+model_bytes = io.BytesIO(response.encode())  # Convert to file-like object
+
+# Load the ONNX model from memory (no download needed)
+session = rt.InferenceSession(model_bytes.getvalue())
 
 # Function to make predictions
 def predict(features):
@@ -15,7 +33,7 @@ def predict(features):
 # Streamlit Page Configuration
 st.set_page_config(page_title="Insurance Policy Predictor", page_icon="💰", layout="wide")
 
-# Custom CSS for cool UI
+# Custom CSS for UI
 st.markdown("""
     <style>
         body {
@@ -98,6 +116,3 @@ if st.button("🔥 Predict Now 🔥"):
     if int(prediction) == 1:
         st.balloons()
 st.markdown("</div>", unsafe_allow_html=True)
-
-
-
