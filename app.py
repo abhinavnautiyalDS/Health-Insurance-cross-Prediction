@@ -1,8 +1,8 @@
 import streamlit as st
 import onnxruntime as rt
 import numpy as np
-import requests
 import io
+import requests
 
 # ==============================
 # CREATED BY ABHINAV NAUTIYAL 🚀
@@ -11,109 +11,94 @@ import io
 # Streamlit Page Configuration
 st.set_page_config(page_title="Insurance Policy Predictor", page_icon="💰", layout="wide")
 
+# Path to ONNX model (already uploaded to Streamlit Cloud)
+MODEL_PATH = "/workspaces/Health-Insurance-cross-Prediction/RandomForestModel.onnx"
+
 # Function to load ONNX model efficiently
 @st.cache_resource  # Ensures model loads only once
 def load_model():
-    FILE_ID = "1p0SVNYD2NlT2J_hIPN3o7azBkEzxjqzF"
-    DIRECT_URL = f"https://drive.google.com/uc?id={FILE_ID}&export=download"
-
-    st.write("Loading ONNX model from Google Drive into memory...")
-    
-    response = requests.get(DIRECT_URL, stream=True)
-    return response.content if response.status_code == 200 else None
-   
+    return rt.InferenceSession(MODEL_PATH)
 
 # Load the model
 session = load_model()
 
+if session:
+    st.success("Created by Abhinav Nautiyal 🚀")
+else:
+    st.error("Failed to load the model. Please check the file path.")
+
+# Min-Max Scaling Constants
+MIN_REGION, MAX_REGION = 0.0, 52.0  # Example values
+MIN_CHANNEL, MAX_CHANNEL = 1.0, 165.0
+MIN_PREMIUM, MAX_PREMIUM = 2630.0, 540000.0
+
+def min_max_scale(value, min_val, max_val):
+    return (value - min_val) / (max_val - min_val)
+
 # Function to make predictions
-def predict(features):
-    if session:
+def predict_response(features):
+    if session is None:
+        return "Model could not be loaded!"
+
+    try:
+        # Get input and output names
         input_name = session.get_inputs()[0].name
         output_name = session.get_outputs()[0].name
-        prediction = session.run([output_name], {input_name: np.array([features], dtype=np.float32)})[0]
-        return prediction[0]
-    else:
-        st.error("❌ Model not loaded. Please check the logs.")
-        return None
 
-# Custom CSS for better UI
-st.markdown("""
-    <style>
-        body { background-color: #0e1117; color: white; }
-        .stButton>button {
-            background: linear-gradient(135deg, #ff7e5f, #feb47b);
-            color: white;
-            font-size: 18px;
-            border-radius: 10px;
-        }
-        .stTextInput>div>div>input, .stNumberInput>div>div>input {
-            background-color: #222;
-            color: white;
-        }
-    </style>
-""", unsafe_allow_html=True)
+        # Convert features to numpy array
+        input_data = np.array([features], dtype=np.float32)
 
-# Title and description
+        # Debug: Print feature shape
+        st.write(f"🔍 Feature Count: {input_data.shape[1]}")
+
+        # Run inference
+        prediction = session.run([output_name], {input_name: input_data})[0]
+
+        return int(prediction[0])
+    except Exception as e:
+        return f"⚠️ Prediction failed: {e}"
+
+# UI Components
 st.markdown("<h1 style='text-align: center;'>🚀 Health Insurance Policy Predictor 💰</h1>", unsafe_allow_html=True)
 st.markdown("<h3 style='text-align: center; color: #FEB47B;'>Find out if a customer will take the policy!</h3>", unsafe_allow_html=True)
 
-# Layout for input fields
 col1, col2 = st.columns([1, 1])
 
 with col1:
     st.markdown("### 📊 Customer Information")
-    
     age_60_plus = st.checkbox("Age 60+")
     age_40_60 = st.checkbox("Age Between 40 and 60")
     age_20_40 = st.checkbox("Age Between 20 and 40")
-
     gender = st.radio("Gender", ["Male", "Female"], horizontal=True)
-    gender_male = 1 if gender == "Male" else 0
-    gender_female = 1 if gender == "Female" else 0
-
     driving_license = st.checkbox("Has Driving License")
-
-    region_code = st.number_input("Region Code", min_value=0.0, value=28.0, step=1.0)
-
+    region_code = min_max_scale(st.number_input("Region Code", min_value=0.0, value=28.0, step=1.0), MIN_REGION, MAX_REGION)
     previously_insured = st.radio("Previously Insured", ["Yes", "No"], horizontal=True)
-    previously_insured_yes = 1 if previously_insured == "Yes" else 0
-    previously_insured_no = 1 if previously_insured == "No" else 0
 
 with col2:
     st.markdown("### 🚗 Vehicle & Policy Details")
-    
     vehicle_age = st.radio("Vehicle Age", ["<1 year", "1-2 years", ">2 years"], horizontal=True)
-    vehicle_age_1_2 = 1 if vehicle_age == "1-2 years" else 0
-    vehicle_age_less_1 = 1 if vehicle_age == "<1 year" else 0
-    vehicle_age_more_2 = 1 if vehicle_age == ">2 years" else 0
-
-    annual_premium = st.number_input("Annual Premium", min_value=0.0, value=40000.0)
-
-    policy_sales_channel = st.number_input("Policy Sales Channel", min_value=0.0, value=26.0, step=1.0)
-
+    annual_premium = min_max_scale(st.number_input("Annual Premium", min_value=0.0, value=40000.0), MIN_PREMIUM, MAX_PREMIUM)
+    policy_sales_channel = min_max_scale(st.number_input("Policy Sales Channel", min_value=0.0, value=26.0, step=1.0), MIN_CHANNEL, MAX_CHANNEL)
     customer_type = st.radio("Customer Type", ["Long-term", "Mid-term", "Short-term"], horizontal=True)
-    long_term = 1 if customer_type == "Long-term" else 0
-    mid_term = 1 if customer_type == "Mid-term" else 0
-    short_term = 1 if customer_type == "Short-term" else 0
 
 # Predict Button
 st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
 if st.button("🔥 Predict Now 🔥"):
     user_input = [
-        int(age_60_plus), int(age_40_60), int(age_20_40), 
-        gender_male, gender_female, int(driving_license), 
-        float(region_code), vehicle_age_1_2, vehicle_age_less_1, vehicle_age_more_2, 
-        float(annual_premium), previously_insured_yes, previously_insured_no, 
-        float(policy_sales_channel), long_term, mid_term, short_term
+        int(age_60_plus), int(age_40_60), int(age_20_40),
+        1 if gender == "Male" else 0, 1 if gender == "Female" else 0, int(driving_license),
+        float(region_code), 1 if vehicle_age == "1-2 years" else 0, 1 if vehicle_age == "<1 year" else 0, 1 if vehicle_age == ">2 years" else 0,
+        float(annual_premium), 1 if previously_insured == "Yes" else 0, 1 if previously_insured == "No" else 0,
+        float(policy_sales_channel), 1 if customer_type == "Long-term" else 0, 1 if customer_type == "Mid-term" else 0
     ]
     
-    prediction = predict(user_input)
-    if prediction is not None:
-        result = "✅ Likely to Take the Policy!" if int(prediction) == 1 else "❌ Not Interested in the Policy"
-        st.success(result)
-        
-        # 🎉 Confetti effect for positive prediction
-        if int(prediction) == 1:
-            st.balloons()
+    if len(user_input) != 16:
+        st.error(f"⚠️ Model expects 16 features, but got {len(user_input)}. Please check inputs.")
+    else:
+        prediction = predict_response(user_input)
+        if prediction is not None:
+            result = "✅ Likely to Take the Policy!" if int(prediction) == 1 else "❌ Not Interested in the Policy"
+            st.success(result)
+            if int(prediction) == 1:
+                st.balloons()
 st.markdown("</div>", unsafe_allow_html=True)
