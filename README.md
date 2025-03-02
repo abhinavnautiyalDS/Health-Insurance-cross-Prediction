@@ -1,4 +1,4 @@
-![Uploading image.png…]()
+![image](https://github.com/user-attachments/assets/7fba100a-20ab-45b2-95b4-548fe45f2c9d)
 
 # Health-Insurance-cross-Prediction
 
