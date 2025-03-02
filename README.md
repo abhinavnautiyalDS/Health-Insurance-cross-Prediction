@@ -1,3 +1,5 @@
+![Uploading image.png…]()
+
 # Health-Insurance-cross-Prediction
 
 An insurance company that offers health insurance to its customers typically provides other insurance products through various marketing channels. In this scenario, we will develop a model to predict whether policyholders from the previous year will also be interested in the company's vehicle insurance.
