@@ -1,27 +1,32 @@
+!pip install onnxruntime numpy gdown streamlit
+
 import streamlit as st
 import onnxruntime as rt
 import numpy as np
-import io
-import requests
-
-# ==============================
-# CREATED BY ABHINAV NAUTIYAL 🚀
-# ==============================
+import gdown  # For downloading files from Google Drive
+import os
 
 # Streamlit Page Configuration
 st.set_page_config(page_title="Insurance Policy Predictor", page_icon="💰", layout="wide")
 
-# Path to ONNX model (already uploaded to Streamlit Cloud)
-MODEL_PATH = "/workspaces/Health-Insurance-cross-Prediction/RandomForestModel.onnx"
+# Google Drive File (ONNX Model)
+file_id = "1p0SVNYD2NlT2J_hIPN3o7azBkEzxjqzF"
+download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
 
-# Function to load ONNX model efficiently
-@st.cache_resource  # Ensures model loads only once
+# Download the ONNX model if not already present
+model_filename = "RandomForestModel.onnx"
+if not os.path.exists(model_filename):
+    gdown.download(download_url, model_filename, quiet=False)
+    st.info(f"Model downloaded successfully! 🚀")
+
+# Load ONNX Model
+@st.cache_resource
 def load_model():
-    return rt.InferenceSession(MODEL_PATH)
+    return rt.InferenceSession(model_filename)
 
-# Load the model
+# Try to load the model
 session = load_model()
-
+# Function to make predictions
 if session:
     st.success("Created by Abhinav Nautiyal 🚀")
 else:
@@ -91,7 +96,7 @@ if st.button("🔥 Predict Now 🔥"):
         float(annual_premium), 1 if previously_insured == "Yes" else 0, 1 if previously_insured == "No" else 0,
         float(policy_sales_channel), 1 if customer_type == "Long-term" else 0, 1 if customer_type == "Mid-term" else 0
     ]
-    
+
     if len(user_input) != 16:
         st.error(f"⚠️ Model expects 16 features, but got {len(user_input)}. Please check inputs.")
     else:
