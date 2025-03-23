@@ -1,3 +1,5 @@
+
+
 import os
 
 os.system("pip install -r requirements.txt")
@@ -31,18 +33,35 @@ def download_model():
 
 # Load Model
 @st.cache_resource
+
+
+# Download and Load Model
+
+
+
+
 def load_model():
     try:
         with open(MODEL_PATH, "rb") as file:
-            model = pickle.load(file)
-        return model
+            data = pickle.load(file)
+
+        if isinstance(data, dict) and "model" in data:
+            model = data["model"]
+            st.write("✅ Model loaded successfully!")
+            return model
+        else:
+            st.error("⚠️ Model file format incorrect. Expected a dictionary with key 'model'.")
+            return None
     except Exception as e:
         st.error(f"⚠️ Error loading model: {e}")
         return None
 
-# Download and Load Model
 download_model()
 model = load_model()
+
+
+# Try to load the mode
+
 
 # Min-Max Scaling Constants
 MIN_REGION, MAX_REGION = 0.0, 52.0
@@ -54,13 +73,15 @@ def min_max_scale(value, min_val, max_val):
 
 # Function to make predictions
 def predict_response(features):
-    if model is None:
-        return "⚠️ Model not available for prediction"
     try:
         input_data = np.array([features], dtype=np.float32)
+
         return model.predict(input_data)[0]
+        
     except Exception as e:
         return f"⚠️ Prediction failed: {e}"
+
+
 
 # UI Components
 st.markdown("<h1 style='text-align: center;'>🚀 Vehicle Insurance Policy Predictor 💰</h1>", unsafe_allow_html=True)
@@ -70,7 +91,9 @@ col1, col2 = st.columns([1, 1])
 
 with col1:
     st.markdown("### 📊 Customer Information")
-    age_category = st.selectbox("Select Age Category", ["<20", "20-40", "40-60", "60+"], index=1)
+    age_60_plus = st.checkbox("Age 60+")
+    age_40_60 = st.checkbox("Age Between 40 and 60")
+    age_20_40 = st.checkbox("Age Between 20 and 40")
     gender = st.radio("Gender", ["Male", "Female"], horizontal=True)
     region_code = min_max_scale(st.slider("Region Code", 0, 52, 28), MIN_REGION, MAX_REGION)
     previously_insured = st.radio("Previously Insured", ["Yes", "No"], horizontal=True)
@@ -82,36 +105,41 @@ with col2:
     policy_sales_channel = min_max_scale(st.slider("Policy Sales Channel", 1, 165, 26), MIN_CHANNEL, MAX_CHANNEL)
     customer_type = st.radio("Customer Type", ["Long-term", "Mid-term", "Short-term"], horizontal=True)
 
+
 # Predict Button
 st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
 
 if st.button("🔥 Predict Now 🔥"):
     user_input = [
-        1 if age_category == "60+" else 0,
-        1 if age_category == "40-60" else 0,
-        1 if age_category == "20-40" else 0,
-        1 if gender == "Male" else 0,  # Gender_Male
-        float(region_code),
-        1 if vehicle_age == "1-2 years" else 0, 
-        1 if vehicle_age == "<1 year" else 0, 
-        1 if vehicle_age == ">2 years" else 0,
-        float(annual_premium),
-        1 if previously_insured == "Yes" else 0,  
-        float(policy_sales_channel), 
-        1 if customer_type == "Long-term" else 0, 
-        1 if customer_type == "Mid-term" else 0, 
-        1 if customer_type == "Short-term" else 0
-    ]
+
+        
+    int(age_60_plus), int(age_40_60), int(age_20_40),
+    1 if gender == "Male" else 0,  # Gender_Male
+    1 if gender == "Female" else 0,  # Gender_Female (NEWLY ADDED)
+    float(region_code), 
+    1 if vehicle_age == "1-2 years" else 0, 
+    1 if vehicle_age == "<1 year" else 0, 
+    1 if vehicle_age == ">2 years" else 0,
+    float(annual_premium), 
+    1 if previously_insured == "Yes" else 0,  # Previously_Insured_yes
+    1 if previously_insured == "No" else 0,   # Previously_Insured_no (NEWLY ADDED)
+    float(policy_sales_channel), 
+    1 if customer_type == "Long-term" else 0, 
+    1 if customer_type == "Mid-term" else 0, 
+    1 if customer_type == "Short-term" else 0
+]
     
     prediction = predict_response(user_input)
-    
-    if prediction is not None:
-        result = "✅ Likely to Take the Policy!" if int(prediction) == 1 else "❌ Not Interested in the Policy"
-        st.success(result)
-        if int(prediction) == 1:
-            st.balloons()
 
-# Custom Footer Styling
+    if prediction is not None:
+            result = "✅ Likely to Take the Policy!" if int(prediction) == 1 else "❌ Not Interested in the Policy"
+            st.success(result)
+            if int(prediction) == 1:
+                st.balloons()
+
+
+
+# Custom CSS for bottom-right text
 st.markdown(
     """
     <style>
@@ -134,4 +162,8 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+       
+         
 st.markdown("</div>", unsafe_allow_html=True)
+
+
