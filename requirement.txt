@@ -3,3 +3,4 @@ numpy
 scikit-learn
 requests
 pickle5
+sklearn
